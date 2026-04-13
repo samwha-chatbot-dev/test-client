@@ -1,0 +1,1434 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>관리자 화면 - 삼화페인트 챗봇</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: #f8f9fa;
+        }
+        .admin-container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        .admin-header {
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        .admin-section {
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        .section-title {
+            font-weight: 600;
+            margin-bottom: 20px;
+            padding-bottom: 10px;
+            border-bottom: 2px solid #667eea;
+        }
+        .item-card {
+            border: 1px solid #dee2e6;
+            border-radius: 8px;
+            padding: 15px;
+            margin-bottom: 15px;
+            background: #f8f9fa;
+        }
+        .item-card:hover {
+            border-color: #667eea;
+        }
+        .item-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 10px;
+        }
+        .item-code {
+            font-weight: 600;
+            color: #667eea;
+            font-size: 1.1em;
+        }
+        .item-actions {
+            display: flex;
+            gap: 5px;
+        }
+        .btn-sm {
+            padding: 4px 12px;
+            font-size: 0.85em;
+        }
+        .kb-domains-tags {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 5px;
+            margin-top: 10px;
+        }
+        .kb-domain-tag {
+            background: white;
+            padding: 4px 10px;
+            border-radius: 15px;
+            font-size: 0.85em;
+            border: 1px solid #dee2e6;
+        }
+        .modal-header {
+            background: #667eea;
+            color: white;
+        }
+        .form-label {
+            font-weight: 500;
+            margin-top: 10px;
+        }
+        .monitoring-card {
+            border: 1px solid #dee2e6;
+            border-radius: 8px;
+            padding: 20px;
+            margin-bottom: 20px;
+            background: #f8f9fa;
+        }
+        .stat-card {
+            background: white;
+            border: 1px solid #dee2e6;
+            border-radius: 8px;
+            padding: 15px;
+            margin-bottom: 10px;
+        }
+        .stat-label {
+            font-size: 0.9em;
+            color: #6c757d;
+            margin-bottom: 5px;
+        }
+        .stat-value {
+            font-size: 1.5em;
+            font-weight: 600;
+            color: #667eea;
+        }
+        .model-detail {
+            background: white;
+            border: 1px solid #dee2e6;
+            border-radius: 8px;
+            padding: 15px;
+            margin-top: 10px;
+        }
+        .loading {
+            text-align: center;
+            padding: 20px;
+            color: #6c757d;
+        }
+        .date-input-group {
+            display: flex;
+            gap: 10px;
+            align-items: center;
+        }
+        .user-search-group {
+            display: flex;
+            gap: 10px;
+            margin-top: 10px;
+        }
+        .nav-tabs {
+            border-bottom: 2px solid #dee2e6;
+        }
+        .nav-tabs .nav-link {
+            color: #6c757d;
+            border: none;
+            border-bottom: 2px solid transparent;
+            padding: 12px 24px;
+            font-weight: 500;
+        }
+        .nav-tabs .nav-link:hover {
+            border-color: #dee2e6;
+            color: #667eea;
+        }
+        .nav-tabs .nav-link.active {
+            color: #667eea;
+            border-bottom-color: #667eea;
+            background-color: transparent;
+        }
+        .tab-content {
+            margin-top: 20px;
+        }
+        .tab-pane {
+            animation: fadeIn 0.3s;
+        }
+        @keyframes fadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+    </style>
+</head>
+<body>
+    <div class="admin-container">
+        <div class="admin-header">
+            <div class="d-flex justify-content-between align-items-center">
+                <div>
+                    <h3 class="mb-0">관리자 화면</h3>
+                    <small class="text-muted">{{ user_info.name }} ({{ user_info.department }})</small>
+                </div>
+                <div>
+                    <a href="/chat" class="btn btn-outline-primary">채팅 화면으로</a>
+                    <a href="/logout" class="btn btn-outline-secondary">로그아웃</a>
+                </div>
+            </div>
+        </div>
+        
+        {% if error %}
+        <div class="alert alert-danger" role="alert">
+            {{ error }}
+        </div>
+        {% endif %}
+        
+        <!-- 탭 네비게이션 -->
+        <div class="admin-section">
+            <ul class="nav nav-tabs" id="adminTabs" role="tablist">
+                <li class="nav-item" role="presentation">
+                    <button class="nav-link active" id="group-code-tab" data-bs-toggle="tab" data-bs-target="#group-code-pane" type="button" role="tab" aria-controls="group-code-pane" aria-selected="true">
+                        Group Code 관리
+                    </button>
+                </li>
+                <li class="nav-item" role="presentation">
+                    <button class="nav-link" id="monitoring-tab" data-bs-toggle="tab" data-bs-target="#monitoring-pane" type="button" role="tab" aria-controls="monitoring-pane" aria-selected="false">
+                        사용량 모니터링
+                    </button>
+                </li>
+                <li class="nav-item" role="presentation">
+                    <button class="nav-link" id="file-upload-tab" data-bs-toggle="tab" data-bs-target="#file-upload-pane" type="button" role="tab" aria-controls="file-upload-pane" aria-selected="false">
+                        파일 업로드
+                    </button>
+                </li>
+            </ul>
+            
+            <div class="tab-content" id="adminTabContent">
+                <!-- Group Code 관리 탭 -->
+                <div class="tab-pane fade show active" id="group-code-pane" role="tabpanel" aria-labelledby="group-code-tab">
+                    <!-- Group Code 관리 -->
+                    <div class="admin-section" style="margin-top: 20px; margin-bottom: 20px;">
+                        <div class="d-flex justify-content-between align-items-center mb-3">
+                            <h5 class="section-title mb-0">Group Code 관리</h5>
+                            <button class="btn btn-primary" onclick="showGroupCodeModal()">+ Group Code 추가</button>
+                        </div>
+                        
+                        <div id="group-codes-list">
+                            {% if group_codes %}
+                                {% for group_code in group_codes %}
+                                <div class="item-card" data-code="{{ group_code.code }}">
+                                    <div class="item-header">
+                                        <div class="item-code">{{ group_code.code }}</div>
+                                        <div class="item-actions">
+                                            <button class="btn btn-sm btn-outline-primary edit-group-code-btn" 
+                                                    data-code="{{ group_code.code }}"
+                                                    data-description="{{ group_code.description or '' }}"
+                                                    data-kb-domains="{% if group_code.kb_domains %}{% if group_code.kb_domains is iterable and group_code.kb_domains is not string %}{{ group_code.kb_domains | join(',') }}{% else %}{{ group_code.kb_domains }}{% endif %}{% endif %}"
+                                                    onclick="editGroupCodeFromButton(this)">
+                                                수정
+                                            </button>
+                                            <button class="btn btn-sm btn-outline-danger" 
+                                                    onclick="deleteGroupCode('{{ group_code.code }}')">
+                                                삭제
+                                            </button>
+                                        </div>
+                                    </div>
+                                    <div class="text-muted">{{ group_code.description or '' }}</div>
+                                    <div class="kb-domains-tags">
+                                        {% if group_code.kb_domains %}
+                                            {% if group_code.kb_domains is iterable and group_code.kb_domains is not string %}
+                                                {% for kb_code in group_code.kb_domains %}
+                                                    {% for kb_domain in kb_domains %}
+                                                        {% if kb_domain.code == kb_code %}
+                                                        <span class="kb-domain-tag">{{ kb_domain.code }} ({{ kb_domain.name or kb_domain.code }})</span>
+                                                        {% endif %}
+                                                    {% endfor %}
+                                                {% endfor %}
+                                            {% else %}
+                                                {% for kb_code in group_code.kb_domains.split(',') %}
+                                                    {% set kb_code = kb_code.strip() %}
+                                                    {% for kb_domain in kb_domains %}
+                                                        {% if kb_domain.code == kb_code %}
+                                                        <span class="kb-domain-tag">{{ kb_domain.code }} ({{ kb_domain.name or kb_domain.code }})</span>
+                                                        {% endif %}
+                                                    {% endfor %}
+                                                {% endfor %}
+                                            {% endif %}
+                                        {% endif %}
+                                    </div>
+                                </div>
+                                {% endfor %}
+                            {% else %}
+                                <div class="text-center text-muted" style="padding: 40px;">
+                                    Group Code가 없습니다
+                                </div>
+                            {% endif %}
+                        </div>
+                    </div>
+                    
+                    <!-- KB Domain 관리 -->
+                    <div class="admin-section" style="margin-top: 20px; margin-bottom: 0;">
+                        <div class="d-flex justify-content-between align-items-center mb-3">
+                            <h5 class="section-title mb-0">KB Domain 관리</h5>
+                            <button class="btn btn-primary" onclick="showKbDomainModal()">+ KB Domain 추가</button>
+                        </div>
+                        
+                        <div id="kb-domains-list">
+                            {% if kb_domains %}
+                                {% for kb_domain in kb_domains %}
+                                <div class="item-card" data-code="{{ kb_domain.code }}">
+                                    <div class="item-header">
+                                        <div class="item-code">{{ kb_domain.code }}</div>
+                                        <div class="item-actions">
+                                            <button class="btn btn-sm btn-outline-primary" 
+                                                    onclick="editKbDomain('{{ kb_domain.code }}', '{{ kb_domain.name or '' }}', '{{ kb_domain.s3_path or '' }}')">
+                                                수정
+                                            </button>
+                                            <button class="btn btn-sm btn-outline-danger" 
+                                                    onclick="deleteKbDomain('{{ kb_domain.code }}')">
+                                                삭제
+                                            </button>
+                                        </div>
+                                    </div>
+                                    <div><strong>이름:</strong> {{ kb_domain.name or '' }}</div>
+                                    <div class="text-muted"><strong>S3 경로:</strong> {{ kb_domain.s3_path or '' }}</div>
+                                </div>
+                                {% endfor %}
+                            {% else %}
+                                <div class="text-center text-muted" style="padding: 40px;">
+                                    KB Domain이 없습니다
+                                </div>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- 사용량 모니터링 탭 -->
+                <div class="tab-pane fade" id="monitoring-pane" role="tabpanel" aria-labelledby="monitoring-tab">
+                    <div class="admin-section" style="margin-top: 20px; margin-bottom: 20px;">
+                        <h5 class="section-title">통계 모니터링</h5>
+                        
+                        <!-- 날짜 범위 선택 -->
+                        <div class="mb-4">
+                            <label class="form-label">조회 기간</label>
+                            <div class="date-input-group">
+                                <input type="date" id="monitoringFromDate" class="form-control" style="max-width: 200px;">
+                                <span>~</span>
+                                <input type="date" id="monitoringToDate" class="form-control" style="max-width: 200px;">
+                                <button class="btn btn-primary" onclick="loadTotalTokenUsage()">전체 통계 조회</button>
+                            </div>
+                        </div>
+                        
+                        <!-- 전체 사용량 결과 -->
+                        <div id="totalUsageCard" style="display: none;">
+                            <h6 class="mb-3">전체 통계</h6>
+                            <div id="totalUsageContent"></div>
+                        </div>
+                    </div>
+                    
+                    <!-- 사용자 선택 영역 -->
+                    <div class="admin-section" style="margin-top: 20px; margin-bottom: 20px;">
+                        <h5 class="section-title">사용자 선택</h5>
+                        
+                        <div class="mb-3">
+                            <label class="form-label">사용자 검색 및 선택</label>
+                            <div class="d-flex gap-2 mb-3">
+                                <input type="text" id="userSearchQ" class="form-control" placeholder="사번/이름 검색" style="max-width: 200px;" onkeypress="if(event.key === 'Enter') loadUserList()">
+                                <input type="text" id="userSearchDept" class="form-control" placeholder="부서 필터" style="max-width: 200px;" onkeypress="if(event.key === 'Enter') loadUserList()">
+                                <input type="text" id="userSearchCorp" class="form-control" placeholder="법인 코드 필터" style="max-width: 200px;" onkeypress="if(event.key === 'Enter') loadUserList()">
+                                <button class="btn btn-primary" onclick="loadUserList()">사용자 목록 조회</button>
+                            </div>
+                            <div id="userListCard" style="display: none;">
+                                <label class="form-label mt-3">사용자 선택</label>
+                                <select id="selectedUser" class="form-select" style="max-width: 400px;">
+                                    <option value="">-- 사용자를 선택하세요 --</option>
+                                </select>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- 사용자별 통계 -->
+                    <div class="admin-section" style="margin-top: 20px; margin-bottom: 20px;">
+                        <h5 class="section-title">사용자별 토큰 사용량 통계</h5>
+                        
+                        <div class="mb-3">
+                            <button class="btn btn-outline-primary" onclick="loadUserTokenStats()">선택한 사용자의 토큰 사용량 조회</button>
+                        </div>
+                        
+                        <!-- 사용자 통계 결과 -->
+                        <div id="userTokenStatsCard" style="display: none;">
+                            <div id="userTokenStatsContent"></div>
+                        </div>
+                    </div>
+                    
+                    <!-- 사용자별 질문 횟수 -->
+                    <div class="admin-section" style="margin-top: 20px; margin-bottom: 20px;">
+                        <h5 class="section-title">사용자별 질문 횟수</h5>
+                        
+                        <div class="mb-3">
+                            <button class="btn btn-outline-primary" onclick="loadQuestionStats()">조회</button>
+                        </div>
+                        
+                        <!-- 질문 횟수 결과 -->
+                        <div id="questionStatsCard" style="display: none;">
+                            <div id="questionStatsContent"></div>
+                        </div>
+                    </div>
+                    
+                    <!-- 대화 이력 조회 -->
+                    <div class="admin-section" style="margin-top: 20px; margin-bottom: 0;">
+                        <h5 class="section-title">대화 이력 조회</h5>
+                        
+                        <div class="mb-3">
+                            <button class="btn btn-outline-primary" onclick="loadHistory()">선택한 사용자의 대화 이력 조회</button>
+                        </div>
+                        
+                        <!-- 대화 이력 결과 -->
+                        <div id="historyCard" style="display: none;">
+                            <div id="historyContent"></div>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- 파일 업로드 탭 -->
+                <div class="tab-pane fade" id="file-upload-pane" role="tabpanel" aria-labelledby="file-upload-tab">
+                    <div class="admin-section" style="margin-top: 20px; margin-bottom: 20px;">
+                        <h5 class="section-title">데이터 소스 관리</h5>
+                        <div class="mb-3">
+                            <button class="btn btn-primary" onclick="loadDataSources()">데이터 소스 목록 조회</button>
+                        </div>
+                        
+                        <!-- 데이터 소스 목록 -->
+                        <div id="dataSourcesCard" style="display: none;">
+                            <div id="dataSourcesContent"></div>
+                        </div>
+                    </div>
+                    
+                    <div class="admin-section" style="margin-top: 20px; margin-bottom: 0;">
+                        <h5 class="section-title">파일 목록 조회</h5>
+                        <div class="mb-3">
+                            <label class="form-label">경로</label>
+                            <div class="d-flex gap-2">
+                                <input type="text" id="filePath" class="form-control" placeholder="예: 사내내규/인사총무/" style="max-width: 400px;">
+                                <button class="btn btn-primary" onclick="loadFiles()">파일 목록 조회</button>
+                            </div>
+                            <small class="text-muted">KB Domain의 S3 경로를 입력해주세요.</small>
+                        </div>
+                        
+                        <!-- 파일 목록 -->
+                        <div id="filesCard" style="display: none;">
+                            <div class="mb-3">
+                                <button class="btn btn-success btn-sm" disabled title="향후 지원 예정">파일 업로드</button>
+                                <small class="text-muted ms-2">파일 업로드 기능은 향후 지원 예정입니다.</small>
+                            </div>
+                            <div id="filesContent"></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Group Code 모달 -->
+    <div class="modal fade" id="groupCodeModal" tabindex="-1">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="groupCodeModalTitle">Group Code 추가</h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <form id="groupCodeForm">
+                        <input type="hidden" id="groupCodeCode" name="code">
+                        <div class="mb-3">
+                            <label class="form-label">Code *</label>
+                            <input type="text" class="form-control" id="groupCodeCodeInput" required>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">설명</label>
+                            <input type="text" class="form-control" id="groupCodeDescription">
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">KB Domains *</label>
+                            <div id="kbDomainsCheckboxContainer" style="max-height: 200px; overflow-y: auto; border: 1px solid #dee2e6; border-radius: 4px; padding: 10px;">
+                                <div class="text-muted text-center" id="kbDomainsLoading">
+                                    KB Domains 목록을 불러오는 중...
+                                </div>
+                            </div>
+                            <small class="form-text text-muted">하나 이상의 KB Domain을 선택해주세요.</small>
+                        </div>
+                    </form>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">취소</button>
+                    <button type="button" class="btn btn-primary" onclick="saveGroupCode()">저장</button>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- KB Domain 모달 -->
+    <div class="modal fade" id="kbDomainModal" tabindex="-1">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="kbDomainModalTitle">KB Domain 추가</h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <form id="kbDomainForm">
+                        <input type="hidden" id="kbDomainCode" name="code">
+                        <div class="mb-3">
+                            <label class="form-label">Code *</label>
+                            <input type="text" class="form-control" id="kbDomainCodeInput" required>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">이름</label>
+                            <input type="text" class="form-control" id="kbDomainName">
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">S3 경로</label>
+                            <input type="text" class="form-control" id="kbDomainS3Path">
+                        </div>
+                    </form>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">취소</button>
+                    <button type="button" class="btn btn-primary" onclick="saveKbDomain()">저장</button>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        // Group Code 모달
+        const groupCodeModal = new bootstrap.Modal(document.getElementById('groupCodeModal'));
+        let isEditingGroupCode = false;
+        let kbDomainsList = []; // KB Domains 목록 캐시
+        
+        // KB Domains 목록 로드
+        async function loadKbDomains() {
+            try {
+                const response = await fetch('/api/admin/kb-domains');
+                if (response.ok) {
+                    const data = await response.json();
+                    kbDomainsList = data.kb_domains || [];
+                    return kbDomainsList;
+                } else {
+                    console.error('KB Domains 목록 로드 실패');
+                    return [];
+                }
+            } catch (error) {
+                console.error('Error loading KB Domains:', error);
+                return [];
+            }
+        }
+        
+        // KB Domains 체크박스 렌더링
+        function renderKbDomainsCheckboxes(selectedDomains = []) {
+            const container = document.getElementById('kbDomainsCheckboxContainer');
+            
+            if (kbDomainsList.length === 0) {
+                container.innerHTML = '<div class="text-muted text-center">KB Domain이 없습니다. 먼저 KB Domain을 추가해주세요.</div>';
+                return;
+            }
+            
+            container.innerHTML = kbDomainsList.map(kbDomain => {
+                const isChecked = selectedDomains.includes(kbDomain.code);
+                return `
+                    <div class="form-check">
+                        <input class="form-check-input" type="checkbox" 
+                               value="${kbDomain.code}" 
+                               id="kbDomain_${kbDomain.code}"
+                               ${isChecked ? 'checked' : ''}>
+                        <label class="form-check-label" for="kbDomain_${kbDomain.code}">
+                            ${kbDomain.code}${kbDomain.name ? ` - ${kbDomain.name}` : ''}
+                        </label>
+                    </div>
+                `;
+            }).join('');
+        }
+        
+        async function showGroupCodeModal() {
+            isEditingGroupCode = false;
+            document.getElementById('groupCodeModalTitle').textContent = 'Group Code 추가';
+            document.getElementById('groupCodeCode').value = '';
+            document.getElementById('groupCodeCodeInput').value = '';
+            document.getElementById('groupCodeCodeInput').disabled = false;
+            document.getElementById('groupCodeDescription').value = '';
+            
+            // KB Domains 목록 로드 및 체크박스 렌더링
+            document.getElementById('kbDomainsCheckboxContainer').innerHTML = 
+                '<div class="text-muted text-center" id="kbDomainsLoading">KB Domains 목록을 불러오는 중...</div>';
+            
+            await loadKbDomains();
+            renderKbDomainsCheckboxes([]);
+            
+            groupCodeModal.show();
+        }
+        
+        function editGroupCodeFromButton(button) {
+            const code = button.getAttribute('data-code');
+            const description = button.getAttribute('data-description') || '';
+            const kbDomainsStr = button.getAttribute('data-kb-domains') || '';
+            
+            // 콤마로 구분된 문자열을 배열로 변환
+            const kbDomains = kbDomainsStr 
+                ? kbDomainsStr.split(',').map(d => d.trim()).filter(d => d)
+                : [];
+            
+            editGroupCode(code, description, kbDomains);
+        }
+        
+        async function editGroupCode(code, description, kbDomains) {
+            isEditingGroupCode = true;
+            document.getElementById('groupCodeModalTitle').textContent = 'Group Code 수정';
+            document.getElementById('groupCodeCode').value = code;
+            document.getElementById('groupCodeCodeInput').value = code;
+            document.getElementById('groupCodeCodeInput').disabled = true;
+            document.getElementById('groupCodeDescription').value = description || '';
+            
+            // KB Domains를 배열로 변환 (문자열이면 콤마로 분리, 배열이면 그대로)
+            const selectedDomains = Array.isArray(kbDomains) 
+                ? kbDomains 
+                : (kbDomains ? kbDomains.split(',').map(d => d.trim()).filter(d => d) : []);
+            
+            // KB Domains 목록 로드 및 체크박스 렌더링
+            document.getElementById('kbDomainsCheckboxContainer').innerHTML = 
+                '<div class="text-muted text-center" id="kbDomainsLoading">KB Domains 목록을 불러오는 중...</div>';
+            
+            await loadKbDomains();
+            renderKbDomainsCheckboxes(selectedDomains);
+            
+            groupCodeModal.show();
+        }
+        
+        async function saveGroupCode() {
+            const code = document.getElementById('groupCodeCodeInput').value.trim();
+            const description = document.getElementById('groupCodeDescription').value.trim();
+            
+            if (!code) {
+                alert('Code를 입력해주세요.');
+                return;
+            }
+            
+            // 선택된 KB Domains를 배열로 수집
+            const selectedCheckboxes = document.querySelectorAll('#kbDomainsCheckboxContainer input[type="checkbox"]:checked');
+            const kbDomains = Array.from(selectedCheckboxes).map(cb => cb.value);
+            
+            if (kbDomains.length === 0) {
+                alert('KB Domain을 하나 이상 선택해주세요.');
+                return;
+            }
+            
+            try {
+                const url = isEditingGroupCode 
+                    ? `/api/admin/group-codes/${code}`
+                    : '/api/admin/group-codes';
+                const method = isEditingGroupCode ? 'PUT' : 'POST';
+                
+                const body = {
+                    description: description,
+                    kb_domains: kbDomains
+                };
+                
+                if (!isEditingGroupCode) {
+                    body.code = code;
+                }
+                
+                const response = await fetch(url, {
+                    method: method,
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify(body)
+                });
+                
+                if (response.ok) {
+                    groupCodeModal.hide();
+                    location.reload();
+                } else {
+                    const error = await response.json();
+                    // 에러 메시지 추출 (detail 필드에서)
+                    const errorMessage = error.detail || error.message || '알 수 없는 오류';
+                    alert('저장에 실패했습니다: ' + errorMessage);
+                }
+            } catch (error) {
+                console.error('Error saving group code:', error);
+                alert('저장에 실패했습니다: ' + error.message);
+            }
+        }
+        
+        async function deleteGroupCode(code) {
+            if (!confirm(`정말 "${code}" Group Code를 삭제하시겠습니까?`)) {
+                return;
+            }
+            
+            try {
+                const response = await fetch(`/api/admin/group-codes/${code}`, {
+                    method: 'DELETE'
+                });
+                
+                if (response.ok) {
+                    location.reload();
+                } else {
+                    const error = await response.json();
+                    alert('삭제에 실패했습니다: ' + (error.detail || '알 수 없는 오류'));
+                }
+            } catch (error) {
+                console.error('Error deleting group code:', error);
+                alert('삭제에 실패했습니다: ' + error.message);
+            }
+        }
+        
+        // KB Domain 모달
+        const kbDomainModal = new bootstrap.Modal(document.getElementById('kbDomainModal'));
+        let isEditingKbDomain = false;
+        
+        function showKbDomainModal() {
+            isEditingKbDomain = false;
+            document.getElementById('kbDomainModalTitle').textContent = 'KB Domain 추가';
+            document.getElementById('kbDomainCode').value = '';
+            document.getElementById('kbDomainCodeInput').value = '';
+            document.getElementById('kbDomainCodeInput').disabled = false;
+            document.getElementById('kbDomainName').value = '';
+            document.getElementById('kbDomainS3Path').value = '';
+            kbDomainModal.show();
+        }
+        
+        function editKbDomain(code, name, s3Path) {
+            isEditingKbDomain = true;
+            document.getElementById('kbDomainModalTitle').textContent = 'KB Domain 수정';
+            document.getElementById('kbDomainCode').value = code;
+            document.getElementById('kbDomainCodeInput').value = code;
+            document.getElementById('kbDomainCodeInput').disabled = true;
+            document.getElementById('kbDomainName').value = name || '';
+            document.getElementById('kbDomainS3Path').value = s3Path || '';
+            kbDomainModal.show();
+        }
+        
+        async function saveKbDomain() {
+            const code = document.getElementById('kbDomainCodeInput').value.trim();
+            const name = document.getElementById('kbDomainName').value.trim();
+            const s3Path = document.getElementById('kbDomainS3Path').value.trim();
+            
+            if (!code) {
+                alert('Code를 입력해주세요.');
+                return;
+            }
+            
+            try {
+                const url = isEditingKbDomain 
+                    ? `/api/admin/kb-domains/${code}`
+                    : '/api/admin/kb-domains';
+                const method = isEditingKbDomain ? 'PUT' : 'POST';
+                
+                const body = {
+                    name: name,
+                    s3_path: s3Path
+                };
+                
+                if (!isEditingKbDomain) {
+                    body.code = code;
+                }
+                
+                const response = await fetch(url, {
+                    method: method,
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify(body)
+                });
+                
+                if (response.ok) {
+                    kbDomainModal.hide();
+                    location.reload();
+                } else {
+                    const error = await response.json();
+                    alert('저장에 실패했습니다: ' + (error.detail || '알 수 없는 오류'));
+                }
+            } catch (error) {
+                console.error('Error saving kb domain:', error);
+                alert('저장에 실패했습니다: ' + error.message);
+            }
+        }
+        
+        async function deleteKbDomain(code) {
+            if (!confirm(`정말 "${code}" KB Domain을 삭제하시겠습니까?`)) {
+                return;
+            }
+            
+            try {
+                const response = await fetch(`/api/admin/kb-domains/${code}`, {
+                    method: 'DELETE'
+                });
+                
+                if (response.ok) {
+                    location.reload();
+                } else {
+                    const error = await response.json();
+                    alert('삭제에 실패했습니다: ' + (error.detail || '알 수 없는 오류'));
+                }
+            } catch (error) {
+                console.error('Error deleting kb domain:', error);
+                alert('삭제에 실패했습니다: ' + error.message);
+            }
+        }
+        
+        // 모니터링 관련 함수들
+        function formatNumber(num) {
+            return new Intl.NumberFormat('ko-KR').format(num);
+        }
+        
+        function formatCost(cost) {
+            return new Intl.NumberFormat('en-US', { 
+                minimumFractionDigits: 2, 
+                maximumFractionDigits: 4 
+            }).format(cost);
+        }
+        
+        async function loadTotalTokenUsage() {
+            const fromDate = document.getElementById('monitoringFromDate').value;
+            const toDate = document.getElementById('monitoringToDate').value;
+            
+            if (!fromDate || !toDate) {
+                alert('조회 기간을 선택해주세요.');
+                return;
+            }
+            
+            const params = new URLSearchParams();
+            params.append('from', fromDate);
+            params.append('to', toDate);
+            params.append('tz', 'Asia/Seoul');
+            
+            const card = document.getElementById('totalUsageCard');
+            const content = document.getElementById('totalUsageContent');
+            
+            card.style.display = 'block';
+            content.innerHTML = '<div class="loading">로딩 중...</div>';
+            
+            try {
+                const response = await fetch(`/api/admin/monitoring/token-usage?${params.toString()}`);
+                if (!response.ok) {
+                    const error = await response.json();
+                    throw new Error(error.detail || '조회 실패');
+                }
+                
+                const data = await response.json();
+                renderTokenUsage(data, content, '전체');
+            } catch (error) {
+                console.error('Error loading total token usage:', error);
+                content.innerHTML = `<div class="alert alert-danger">오류: ${error.message}</div>`;
+            }
+        }
+        
+        // 사용자 목록 조회
+        async function loadUserList() {
+            const q = document.getElementById('userSearchQ').value.trim();
+            const dept = document.getElementById('userSearchDept').value.trim();
+            const corp = document.getElementById('userSearchCorp').value.trim();
+            
+            const params = new URLSearchParams();
+            params.append('page', '1');
+            params.append('page_size', '100');
+            if (q) params.append('q', q);
+            if (dept) params.append('department', dept);
+            if (corp) params.append('corp_id', corp);
+            
+            const card = document.getElementById('userListCard');
+            const select = document.getElementById('selectedUser');
+            
+            try {
+                const response = await fetch(`/api/admin/monitoring/users?${params.toString()}`);
+                if (!response.ok) {
+                    const error = await response.json();
+                    throw new Error(error.detail || '조회 실패');
+                }
+                
+                const data = await response.json();
+                const items = data.items || [];
+                
+                // 드롭다운 채우기
+                select.innerHTML = '<option value="">-- 사용자를 선택하세요 --</option>';
+                items.forEach(user => {
+                    const option = document.createElement('option');
+                    option.value = JSON.stringify({
+                        employee_id: user.employee_id,
+                        name: user.name,
+                        department: user.department,
+                        corp_id: user.corp_id
+                    });
+                    option.textContent = `${user.name} (${user.employee_id}) - ${user.department || '-'}${user.corp_id ? ' / ' + user.corp_id : ''}`;
+                    select.appendChild(option);
+                });
+                
+                card.style.display = 'block';
+                
+                if (items.length === 0) {
+                    alert('조회된 사용자가 없습니다.');
+                }
+            } catch (error) {
+                console.error('Error loading user list:', error);
+                alert('사용자 목록 조회 실패: ' + error.message);
+            }
+        }
+        
+        // 선택한 사용자의 토큰 사용량 조회
+        async function loadUserTokenStats() {
+            const selectedUser = document.getElementById('selectedUser').value;
+            
+            if (!selectedUser) {
+                alert('사용자를 선택해주세요.');
+                return;
+            }
+            
+            const user = JSON.parse(selectedUser);
+            const fromDate = document.getElementById('monitoringFromDate').value;
+            const toDate = document.getElementById('monitoringToDate').value;
+            
+            if (!fromDate || !toDate) {
+                alert('조회 기간을 선택해주세요.');
+                return;
+            }
+            
+            const params = new URLSearchParams();
+            params.append('from', fromDate);
+            params.append('to', toDate);
+            params.append('tz', 'Asia/Seoul');
+            
+            const card = document.getElementById('userTokenStatsCard');
+            const content = document.getElementById('userTokenStatsContent');
+            
+            card.style.display = 'block';
+            content.innerHTML = '<div class="loading">로딩 중...</div>';
+            
+            try {
+                const response = await fetch(`/api/admin/monitoring/users/${encodeURIComponent(user.employee_id)}/token-usage?${params.toString()}`);
+                if (!response.ok) {
+                    const error = await response.json();
+                    throw new Error(error.detail || '조회 실패');
+                }
+                
+                const data = await response.json();
+                renderTokenUsage(data, content, `사용자: ${user.name} (${user.employee_id})`);
+            } catch (error) {
+                console.error('Error loading user token stats:', error);
+                content.innerHTML = `<div class="alert alert-danger">오류: ${error.message}</div>`;
+            }
+        }
+        
+        async function loadQuestionStats() {
+            const fromDate = document.getElementById('monitoringFromDate').value;
+            const toDate = document.getElementById('monitoringToDate').value;
+            
+            if (!fromDate || !toDate) {
+                alert('조회 기간을 선택해주세요.');
+                return;
+            }
+            
+            const params = new URLSearchParams();
+            params.append('from', fromDate);
+            params.append('to', toDate);
+            params.append('page', '1');
+            params.append('page_size', '50');
+            
+            const card = document.getElementById('questionStatsCard');
+            const content = document.getElementById('questionStatsContent');
+            
+            card.style.display = 'block';
+            content.innerHTML = '<div class="loading">로딩 중...</div>';
+            
+            try {
+                const response = await fetch(`/api/admin/monitoring/questions/users?${params.toString()}`);
+                if (!response.ok) {
+                    const error = await response.json();
+                    throw new Error(error.detail || '조회 실패');
+                }
+                
+                const data = await response.json();
+                renderQuestionStats(data, content);
+            } catch (error) {
+                console.error('Error loading question stats:', error);
+                content.innerHTML = `<div class="alert alert-danger">오류: ${error.message}</div>`;
+            }
+        }
+        
+        async function loadHistory() {
+            const selectedUser = document.getElementById('selectedUser').value;
+            
+            if (!selectedUser) {
+                alert('사용자를 선택해주세요.');
+                return;
+            }
+            
+            const user = JSON.parse(selectedUser);
+            
+            const params = new URLSearchParams();
+            params.append('page', '1');
+            params.append('pagesize', '20');
+            params.append('employee_id', user.employee_id);
+            
+            const card = document.getElementById('historyCard');
+            const content = document.getElementById('historyContent');
+            
+            card.style.display = 'block';
+            content.innerHTML = '<div class="loading">로딩 중...</div>';
+            
+            try {
+                const response = await fetch(`/api/admin/monitoring/history?${params.toString()}`);
+                if (!response.ok) {
+                    const error = await response.json();
+                    throw new Error(error.detail || '조회 실패');
+                }
+                
+                const data = await response.json();
+                renderHistory(data, content);
+            } catch (error) {
+                console.error('Error loading history:', error);
+                content.innerHTML = `<div class="alert alert-danger">오류: ${error.message}</div>`;
+            }
+        }
+        
+        function renderTokenUsage(data, container, title) {
+            const range = data.range || {};
+            const scope = data.scope || {};
+            const totals = data.totals || {};
+            const byModel = data.by_model || [];
+            
+            let html = `
+                <div class="monitoring-card">
+                    <div class="mb-3">
+                        <strong>조회 범위:</strong> ${scope.type === 'user' ? `사용자 (${scope.employee_id})` : '전체'} | 
+                        <strong>기간:</strong> ${range.from || '-'} ~ ${range.to || '-'} (${range.tz || 'Asia/Seoul'})
+                    </div>
+                    
+                    <div class="row">
+                        <div class="col-md-3">
+                            <div class="stat-card">
+                                <div class="stat-label">입력 토큰</div>
+                                <div class="stat-value">${formatNumber(totals.input_tokens || 0)}</div>
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <div class="stat-card">
+                                <div class="stat-label">출력 토큰</div>
+                                <div class="stat-value">${formatNumber(totals.output_tokens || 0)}</div>
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <div class="stat-card">
+                                <div class="stat-label">총 토큰</div>
+                                <div class="stat-value">${formatNumber(totals.total_tokens || 0)}</div>
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <div class="stat-card">
+                                <div class="stat-label">추정 비용</div>
+                                <div class="stat-value">$${formatCost(totals.estimated_cost || 0)}</div>
+                                <small class="text-muted">${totals.currency || 'USD'}</small>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    ${byModel.length > 0 ? `
+                        <div class="mt-4">
+                            <h6>모델별 상세</h6>
+                            ${byModel.map(model => `
+                                <div class="model-detail">
+                                    <div class="mb-2"><strong>${model.model || '-'}</strong></div>
+                                    <div class="row">
+                                        <div class="col-md-2"><small class="text-muted">요청 건수:</small> ${formatNumber(model.request_count || 0)}</div>
+                                        <div class="col-md-2"><small class="text-muted">입력 토큰:</small> ${formatNumber(model.input_tokens || 0)}</div>
+                                        <div class="col-md-2"><small class="text-muted">출력 토큰:</small> ${formatNumber(model.output_tokens || 0)}</div>
+                                        <div class="col-md-2"><small class="text-muted">총 토큰:</small> ${formatNumber(model.total_tokens || 0)}</div>
+                                        <div class="col-md-2"><small class="text-muted">비용:</small> $${formatCost(model.estimated_cost || 0)}</div>
+                                    </div>
+                                </div>
+                            `).join('')}
+                        </div>
+                    ` : ''}
+                </div>
+            `;
+            
+            container.innerHTML = html;
+        }
+        
+        function renderUserStats(data, container) {
+            const items = data.items || [];
+            const total = data.total || 0;
+            const fromDate = data.from || '';
+            const toDate = data.to || '';
+            
+            let html = `
+                <div class="mb-3">
+                    <strong>기간:</strong> ${fromDate} ~ ${toDate} | 
+                    <strong>총 사용자:</strong> ${formatNumber(total)}명
+                </div>
+                <div class="table-responsive">
+                    <table class="table table-hover">
+                        <thead>
+                            <tr>
+                                <th>사번</th>
+                                <th>이름</th>
+                                <th>부서</th>
+                                <th>입력 토큰</th>
+                                <th>출력 토큰</th>
+                                <th>총 토큰</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            ${items.map(item => `
+                                <tr>
+                                    <td>${item.employee_id || '-'}</td>
+                                    <td>${item.name || '-'}</td>
+                                    <td>${item.department || '-'}</td>
+                                    <td>${formatNumber(item.input_tokens || 0)}</td>
+                                    <td>${formatNumber(item.output_tokens || 0)}</td>
+                                    <td>${formatNumber(item.total_tokens || 0)}</td>
+                                </tr>
+                            `).join('')}
+                        </tbody>
+                    </table>
+                </div>
+            `;
+            
+            if (items.length === 0) {
+                html = '<div class="text-center text-muted">데이터가 없습니다.</div>';
+            }
+            
+            container.innerHTML = html;
+        }
+        
+        function renderQuestionStats(data, container) {
+            const items = data.items || [];
+            const total = data.total || 0;
+            const fromDate = data.from || '';
+            const toDate = data.to || '';
+            
+            let html = `
+                <div class="mb-3">
+                    <strong>기간:</strong> ${fromDate} ~ ${toDate} | 
+                    <strong>총 사용자:</strong> ${formatNumber(total)}명
+                </div>
+                <div class="table-responsive">
+                    <table class="table table-hover">
+                        <thead>
+                            <tr>
+                                <th>사번</th>
+                                <th>이름</th>
+                                <th>부서</th>
+                                <th>질문 횟수</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            ${items.map(item => `
+                                <tr>
+                                    <td>${item.employee_id || '-'}</td>
+                                    <td>${item.name || '-'}</td>
+                                    <td>${item.department || '-'}</td>
+                                    <td>${formatNumber(item.question_count || 0)}</td>
+                                </tr>
+                            `).join('')}
+                        </tbody>
+                    </table>
+                </div>
+            `;
+            
+            if (items.length === 0) {
+                html = '<div class="text-center text-muted">데이터가 없습니다.</div>';
+            }
+            
+            container.innerHTML = html;
+        }
+        
+        async function renderHistory(data, container) {
+            const items = data.data || [];
+            const pagination = data.pagination || {};
+            
+            let html = `
+                <div class="mb-3">
+                    <strong>총 대화 수:</strong> ${formatNumber(pagination.total || 0)}
+                </div>
+                <div class="table-responsive">
+                    <table class="table table-hover">
+                        <thead>
+                            <tr>
+                                <th>제목</th>
+                                <th>사용자</th>
+                                <th>부서</th>
+                                <th>생성일</th>
+                                <th>수정일</th>
+                                <th>메시지 수</th>
+                                <th>상태</th>
+                                <th>작업</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            ${items.map(item => `
+                                <tr>
+                                    <td>${item.title || '-'}</td>
+                                    <td>${item.user_info ? `${item.user_info.name || '-'} (${item.user_info.employee_id || '-'})` : '-'}</td>
+                                    <td>${item.user_info ? (item.user_info.department || '-') : '-'}</td>
+                                    <td>${item.created_at ? new Date(item.created_at).toLocaleString('ko-KR') : '-'}</td>
+                                    <td>${item.updated_at ? new Date(item.updated_at).toLocaleString('ko-KR') : '-'}</td>
+                                    <td>${formatNumber(item.message_count || 0)}</td>
+                                    <td>${item.deleted ? '<span class="badge bg-secondary">삭제됨</span>' : '<span class="badge bg-success">활성</span>'}</td>
+                                    <td>
+                                        <button class="btn btn-sm btn-outline-primary" onclick="viewHistoryDetail('${item.conversation_id}')">상세보기</button>
+                                    </td>
+                                </tr>
+                            `).join('')}
+                        </tbody>
+                    </table>
+                </div>
+            `;
+            
+            if (items.length === 0) {
+                html = '<div class="text-center text-muted">데이터가 없습니다.</div>';
+            }
+            
+            container.innerHTML = html;
+        }
+        
+        async function viewHistoryDetail(conversationId) {
+            try {
+                const response = await fetch(`/api/admin/monitoring/history/${conversationId}`);
+                if (!response.ok) {
+                    const error = await response.json();
+                    throw new Error(error.detail || '조회 실패');
+                }
+                
+                const data = await response.json();
+                
+                // 모달 또는 새 창으로 상세 정보 표시
+                let messagesHtml = '';
+                if (data.messages && data.messages.length > 0) {
+                    messagesHtml = data.messages.map(msg => `
+                        <div class="mb-3 p-3" style="background: ${msg.role === 'user' ? '#e3f2fd' : '#f5f5f5'}; border-radius: 8px;">
+                            <div class="d-flex justify-content-between mb-2">
+                                <strong>${msg.role === 'user' ? '사용자' : '어시스턴트'}</strong>
+                                <small class="text-muted">${msg.created_at ? new Date(msg.created_at).toLocaleString('ko-KR') : '-'}</small>
+                            </div>
+                            <div>${msg.content || '-'}</div>
+                            ${msg.metadata && msg.metadata.bedrock ? `
+                                <div class="mt-2 small text-muted">
+                                    모델: ${msg.metadata.bedrock.model?.pricing_key || '-'}<br>
+                                    토큰: 입력 ${formatNumber(msg.metadata.bedrock.usage?.input_tokens || 0)}, 
+                                    출력 ${formatNumber(msg.metadata.bedrock.usage?.output_tokens || 0)}, 
+                                    총 ${formatNumber(msg.metadata.bedrock.usage?.total_tokens || 0)}
+                                </div>
+                            ` : ''}
+                        </div>
+                    `).join('');
+                }
+                
+                const detailHtml = `
+                    <div class="modal fade" id="historyDetailModal" tabindex="-1">
+                        <div class="modal-dialog modal-lg">
+                            <div class="modal-content">
+                                <div class="modal-header">
+                                    <h5 class="modal-title">대화 상세: ${data.title || '-'}</h5>
+                                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                                </div>
+                                <div class="modal-body" style="max-height: 600px; overflow-y: auto;">
+                                    <div class="mb-3">
+                                        <strong>사용자:</strong> ${data.user_info ? `${data.user_info.name || '-'} (${data.user_info.employee_id || '-'})` : '-'}<br>
+                                        <strong>부서:</strong> ${data.user_info ? (data.user_info.department || '-') : '-'}<br>
+                                        <strong>생성일:</strong> ${data.created_at ? new Date(data.created_at).toLocaleString('ko-KR') : '-'}<br>
+                                        <strong>수정일:</strong> ${data.updated_at ? new Date(data.updated_at).toLocaleString('ko-KR') : '-'}<br>
+                                        <strong>상태:</strong> ${data.deleted ? '<span class="badge bg-secondary">삭제됨</span>' : '<span class="badge bg-success">활성</span>'}
+                                    </div>
+                                    <hr>
+                                    <h6>메시지</h6>
+                                    ${messagesHtml || '<div class="text-muted">메시지가 없습니다.</div>'}
+                                </div>
+                                <div class="modal-footer">
+                                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">닫기</button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                `;
+                
+                // 기존 모달 제거 후 새로 추가
+                const existingModal = document.getElementById('historyDetailModal');
+                if (existingModal) {
+                    existingModal.remove();
+                }
+                
+                document.body.insertAdjacentHTML('beforeend', detailHtml);
+                const modal = new bootstrap.Modal(document.getElementById('historyDetailModal'));
+                modal.show();
+                
+                // 모달 닫힐 때 DOM에서 제거
+                document.getElementById('historyDetailModal').addEventListener('hidden.bs.modal', function () {
+                    this.remove();
+                });
+            } catch (error) {
+                console.error('Error loading history detail:', error);
+                alert('상세 조회 실패: ' + error.message);
+            }
+        }
+        
+        // 파일 업로드 관련 함수들
+        async function loadDataSources() {
+            const card = document.getElementById('dataSourcesCard');
+            const content = document.getElementById('dataSourcesContent');
+            
+            card.style.display = 'block';
+            content.innerHTML = '<div class="loading">로딩 중...</div>';
+            
+            try {
+                const response = await fetch('/api/admin/kb/data-sources');
+                if (!response.ok) {
+                    const error = await response.json();
+                    throw new Error(error.detail || '조회 실패');
+                }
+                
+                const data = await response.json();
+                renderDataSources(data, content);
+            } catch (error) {
+                console.error('Error loading data sources:', error);
+                content.innerHTML = `<div class="alert alert-danger">오류: ${error.message}</div>`;
+            }
+        }
+        
+        async function loadFiles() {
+            const path = document.getElementById('filePath').value.trim();
+            
+            if (!path) {
+                alert('경로를 입력해주세요.');
+                return;
+            }
+            
+            const params = new URLSearchParams();
+            params.append('path', path);
+            
+            const card = document.getElementById('filesCard');
+            const content = document.getElementById('filesContent');
+            
+            card.style.display = 'block';
+            content.innerHTML = '<div class="loading">로딩 중...</div>';
+            
+            try {
+                const response = await fetch(`/api/admin/kb/files?${params.toString()}`);
+                if (!response.ok) {
+                    const error = await response.json();
+                    throw new Error(error.detail || '조회 실패');
+                }
+                
+                const data = await response.json();
+                renderFiles(data, content);
+            } catch (error) {
+                console.error('Error loading files:', error);
+                content.innerHTML = `<div class="alert alert-danger">오류: ${error.message}</div>`;
+            }
+        }
+        
+        function renderDataSources(data, container) {
+            const dataSources = data.dataSources || [];
+            
+            let html = `
+                <div class="table-responsive">
+                    <table class="table table-hover">
+                        <thead>
+                            <tr>
+                                <th>경로</th>
+                                <th>표시명</th>
+                                <th>파일 개수</th>
+                                <th>총 용량 (MB)</th>
+                                <th>최근 업데이트</th>
+                                <th>상태</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            ${dataSources.map(ds => `
+                                <tr>
+                                    <td>${ds.path || '-'}</td>
+                                    <td>${ds.displayName || '-'}</td>
+                                    <td>${formatNumber(ds.fileCount || 0)}</td>
+                                    <td>${ds.totalSizeMB ? ds.totalSizeMB.toFixed(2) : '0.00'}</td>
+                                    <td>${ds.lastUpdatedAt ? new Date(ds.lastUpdatedAt).toLocaleString('ko-KR') : '-'}</td>
+                                    <td>
+                                        ${ds.status === 'ACTIVE' ? '<span class="badge bg-success">활성</span>' : 
+                                          ds.status === 'EMPTY' ? '<span class="badge bg-secondary">비어있음</span>' : 
+                                          ds.status === 'ERROR' ? '<span class="badge bg-danger">오류</span>' : 
+                                          '<span class="badge bg-secondary">-</span>'}
+                                    </td>
+                                </tr>
+                            `).join('')}
+                        </tbody>
+                    </table>
+                </div>
+            `;
+            
+            if (dataSources.length === 0) {
+                html = '<div class="text-center text-muted">데이터 소스가 없습니다.</div>';
+            }
+            
+            container.innerHTML = html;
+        }
+        
+        function renderFiles(data, container) {
+            const files = data.files || [];
+            
+            let html = `
+                <div class="table-responsive">
+                    <table class="table table-hover">
+                        <thead>
+                            <tr>
+                                <th>파일명</th>
+                                <th>크기 (MB)</th>
+                                <th>최근 수정일</th>
+                                <th>작업</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            ${files.map(file => `
+                                <tr>
+                                    <td>${file.fileName || '-'}</td>
+                                    <td>${file.sizeMB ? file.sizeMB.toFixed(2) : '0.00'}</td>
+                                    <td>${file.lastModified ? new Date(file.lastModified).toLocaleString('ko-KR') : '-'}</td>
+                                    <td>
+                                        <button class="btn btn-sm btn-outline-danger" disabled title="향후 지원 예정">삭제</button>
+                                    </td>
+                                </tr>
+                            `).join('')}
+                        </tbody>
+                    </table>
+                </div>
+            `;
+            
+            if (files.length === 0) {
+                html = '<div class="text-center text-muted">파일이 없습니다.</div>';
+            }
+            
+            container.innerHTML = html;
+        }
+        
+        // 페이지 로드 시 기본 날짜 설정 (7일 전 ~ 오늘)
+        window.addEventListener('DOMContentLoaded', function() {
+            const today = new Date();
+            const sevenDaysAgo = new Date(today);
+            sevenDaysAgo.setDate(today.getDate() - 7);
+            
+            const toDateInput = document.getElementById('monitoringToDate');
+            const fromDateInput = document.getElementById('monitoringFromDate');
+            
+            if (toDateInput) {
+                toDateInput.value = today.toISOString().split('T')[0];
+            }
+            if (fromDateInput) {
+                fromDateInput.value = sevenDaysAgo.toISOString().split('T')[0];
+            }
+        });
+    </script>
+</body>
+</html>
+
+
+
+
+
+

@@ -1,0 +1,1092 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>삼화페인트 챗봇</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/marked@9.1.2/marked.min.js"></script>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            height: 100vh;
+            overflow: hidden;
+        }
+        .chat-container {
+            display: flex;
+            height: 100vh;
+        }
+        .sidebar {
+            width: 300px;
+            background: #f8f9fa;
+            border-right: 1px solid #dee2e6;
+            display: flex;
+            flex-direction: column;
+        }
+        .sidebar-header {
+            padding: 20px;
+            border-bottom: 1px solid #dee2e6;
+            background: white;
+        }
+        .sidebar-title {
+            font-weight: 600;
+            margin-bottom: 15px;
+        }
+        .btn-new-chat {
+            width: 100%;
+            margin-bottom: 10px;
+        }
+        .conversation-list {
+            flex: 1;
+            overflow-y: auto;
+            padding: 10px;
+        }
+        .conversation-item {
+            padding: 12px;
+            margin-bottom: 8px;
+            background: white;
+            border-radius: 8px;
+            cursor: pointer;
+            border: 1px solid #dee2e6;
+            transition: all 0.2s;
+        }
+        .conversation-item:hover {
+            background: #e9ecef;
+            border-color: #667eea;
+        }
+        .conversation-item.active {
+            background: #667eea;
+            color: white;
+            border-color: #667eea;
+        }
+        .conversation-title {
+            font-weight: 500;
+            margin-bottom: 5px;
+            font-size: 0.95em;
+        }
+        .conversation-date {
+            font-size: 0.8em;
+            color: #6c757d;
+        }
+        .conversation-item.active .conversation-date {
+            color: rgba(255, 255, 255, 0.8);
+        }
+        .conversation-actions {
+            margin-top: 5px;
+            display: flex;
+            gap: 5px;
+        }
+        .conversation-actions button {
+            font-size: 0.75em;
+            padding: 2px 8px;
+        }
+        .chat-main {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            background: white;
+        }
+        .chat-header {
+            padding: 15px 20px;
+            border-bottom: 1px solid #dee2e6;
+            background: white;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .user-info {
+            font-size: 0.9em;
+            color: #6c757d;
+        }
+        .chat-messages {
+            flex: 1;
+            overflow-y: auto;
+            padding: 20px;
+            background: #f8f9fa;
+        }
+        .message {
+            margin-bottom: 20px;
+            display: flex;
+            flex-direction: column;
+        }
+        .message.user {
+            align-items: flex-end;
+        }
+        .message.assistant {
+            align-items: flex-start;
+        }
+        .message-content {
+            max-width: 70%;
+            padding: 12px 16px;
+            border-radius: 12px;
+            word-wrap: break-word;
+        }
+        .message.user .message-content {
+            background: #667eea;
+            color: white;
+        }
+        .message.assistant .message-content {
+            background: white;
+            color: #333;
+            border: 1px solid #dee2e6;
+        }
+        .message-content p {
+            margin: 0.5em 0;
+            line-height: 1.6;
+        }
+        .message-content p:first-child {
+            margin-top: 0;
+        }
+        .message-content p:last-child {
+            margin-bottom: 0;
+        }
+        .message-content ul, .message-content ol {
+            margin: 0.5em 0;
+            padding-left: 1.5em;
+        }
+        .message-content li {
+            margin: 0.25em 0;
+            line-height: 1.6;
+        }
+        .message-content strong {
+            font-weight: 600;
+        }
+        .message-content code {
+            background: rgba(0, 0, 0, 0.1);
+            padding: 2px 4px;
+            border-radius: 3px;
+            font-family: 'Courier New', monospace;
+            font-size: 0.9em;
+        }
+        .message.user .message-content code {
+            background: rgba(255, 255, 255, 0.2);
+        }
+        .message-content h1, .message-content h2, .message-content h3 {
+            margin: 0.8em 0 0.4em 0;
+            font-weight: 600;
+        }
+        .message-content h1:first-child, .message-content h2:first-child, .message-content h3:first-child {
+            margin-top: 0;
+        }
+        .message-time {
+            font-size: 0.75em;
+            color: #6c757d;
+            margin-top: 5px;
+        }
+        .chat-input-area {
+            padding: 20px;
+            border-top: 1px solid #dee2e6;
+            background: white;
+        }
+        .input-group {
+            display: flex;
+            gap: 10px;
+        }
+        .form-control {
+            border-radius: 8px;
+        }
+        .btn-send {
+            border-radius: 8px;
+            padding: 10px 30px;
+            background: #667eea;
+            border: none;
+        }
+        .btn-send:hover {
+            background: #5568d3;
+        }
+        .typing-indicator {
+            display: none;
+            padding: 12px 16px;
+            background: white;
+            border-radius: 12px;
+            border: 1px solid #dee2e6;
+            max-width: 70px;
+        }
+        .typing-indicator.active {
+            display: block;
+        }
+        .typing-dots {
+            display: flex;
+            gap: 4px;
+        }
+        .typing-dot {
+            width: 8px;
+            height: 8px;
+            background: #6c757d;
+            border-radius: 50%;
+            animation: typing 1.4s infinite;
+        }
+        .typing-dot:nth-child(2) {
+            animation-delay: 0.2s;
+        }
+        .typing-dot:nth-child(3) {
+            animation-delay: 0.4s;
+        }
+        @keyframes typing {
+            0%, 60%, 100% {
+                transform: translateY(0);
+            }
+            30% {
+                transform: translateY(-10px);
+            }
+        }
+        .message-sources {
+            margin-top: 12px;
+            padding-top: 12px;
+            border-top: 1px solid #e9ecef;
+        }
+        .message-sources-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            cursor: pointer;
+            user-select: none;
+            padding: 8px 0;
+            transition: background-color 0.2s;
+            border-radius: 4px;
+            margin: -8px 0 8px 0;
+        }
+        .message-sources-header:hover {
+            background-color: #f8f9fa;
+        }
+        .message-sources-title {
+            font-size: 0.85em;
+            font-weight: 600;
+            color: #6c757d;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+        .message-sources-title::before {
+            content: "📚";
+            font-size: 1em;
+        }
+        .message-sources-count {
+            font-size: 0.8em;
+            color: #6c757d;
+            margin-left: 8px;
+        }
+        .message-sources-toggle {
+            font-size: 0.8em;
+            color: #667eea;
+            display: flex;
+            align-items: center;
+            gap: 4px;
+            transition: transform 0.2s;
+        }
+        .message-sources-toggle.collapsed {
+            transform: rotate(-90deg);
+        }
+        .message-sources-toggle::after {
+            content: "▼";
+            font-size: 0.7em;
+        }
+        .sources-list {
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+            max-height: 300px;
+            overflow-y: auto;
+            transition: max-height 0.3s ease-out, opacity 0.3s ease-out;
+        }
+        .sources-list.collapsed {
+            max-height: 0;
+            opacity: 0;
+            overflow: hidden;
+            margin: 0;
+        }
+        .source-item {
+            display: flex;
+            align-items: flex-start;
+            gap: 8px;
+            padding: 8px 12px;
+            background: #f8f9fa;
+            border-radius: 6px;
+            border-left: 3px solid #667eea;
+            font-size: 0.9em;
+        }
+        .source-item-info {
+            flex: 1;
+        }
+        .source-title {
+            font-weight: 500;
+            color: #333;
+            margin-bottom: 4px;
+            word-break: break-word;
+        }
+        .source-meta {
+            display: flex;
+            gap: 12px;
+            font-size: 0.85em;
+            color: #6c757d;
+            flex-wrap: wrap;
+        }
+        .source-meta-item {
+            display: flex;
+            align-items: center;
+            gap: 4px;
+        }
+        .source-relevance {
+            padding: 2px 6px;
+            background: #e7f3ff;
+            border-radius: 4px;
+            color: #0066cc;
+            font-weight: 500;
+        }
+    </style>
+</head>
+<body>
+    <div class="chat-container">
+        <!-- 사이드바 -->
+        <div class="sidebar">
+            <div class="sidebar-header">
+                <div class="sidebar-title">대화 목록</div>
+                <button class="btn btn-primary btn-sm btn-new-chat" onclick="startNewConversation()">
+                    새 대화
+                </button>
+            </div>
+            <div class="conversation-list" id="conversation-list">
+                {% if conversations %}
+                    {% for conv in conversations %}
+                    <div class="conversation-item" data-conversation-id="{{ conv.conversation_id }}">
+                        <div class="conversation-title">{{ conv.title or '새 대화' }}</div>
+                        <div class="conversation-date">{{ conv.created_at[:10] if conv.created_at else '' }}</div>
+                        <div class="conversation-actions">
+                            <button class="btn btn-sm btn-outline-secondary" onclick="editTitle('{{ conv.conversation_id }}', event)">제목 수정</button>
+                            <button class="btn btn-sm btn-outline-danger" onclick="deleteConversation('{{ conv.conversation_id }}', event)">삭제</button>
+                        </div>
+                    </div>
+                    {% endfor %}
+                {% else %}
+                    <div class="text-muted text-center" style="padding: 20px;">
+                        대화가 없습니다
+                    </div>
+                {% endif %}
+            </div>
+        </div>
+        
+        <!-- 채팅 메인 영역 -->
+        <div class="chat-main">
+            <div class="chat-header">
+                <div>
+                    <h5 class="mb-0">삼화페인트 챗봇</h5>
+                    <div class="user-info">
+                        {{ user_info.name }} ({{ user_info.department }}) | Group: {{ user_info.group_code }}
+                    </div>
+                </div>
+                <div>
+                    <a href="/admin" class="btn btn-sm btn-outline-primary me-2">관리자</a>
+                    <a href="/logout" class="btn btn-sm btn-outline-secondary">로그아웃</a>
+                </div>
+            </div>
+            
+            <div class="chat-messages" id="chat-messages">
+                <div class="text-center text-muted" style="padding: 40px;">
+                    메시지를 입력하여 대화를 시작하세요
+                </div>
+            </div>
+            
+            <div class="chat-input-area">
+                <div class="input-group">
+                    <input type="text" class="form-control" id="message-input" 
+                           placeholder="메시지를 입력하세요..." 
+                           onkeypress="handleKeyPress(event)">
+                    <button class="btn btn-primary btn-send" onclick="sendMessage()">전송</button>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        let currentConversationId = null;
+        const chatMessages = document.getElementById('chat-messages');
+        const messageInput = document.getElementById('message-input');
+        
+        // 대화 목록 항목 클릭 이벤트
+        document.querySelectorAll('.conversation-item').forEach(item => {
+            item.addEventListener('click', function(e) {
+                // 버튼 클릭이 아닌 경우에만 대화 로드
+                if (!e.target.closest('button')) {
+                    const conversationId = this.getAttribute('data-conversation-id');
+                    loadConversation(conversationId);
+                }
+            });
+        });
+        
+        // 새 대화 시작
+        function startNewConversation() {
+            currentConversationId = null;
+            chatMessages.innerHTML = '<div class="text-center text-muted" style="padding: 40px;">메시지를 입력하여 대화를 시작하세요</div>';
+            document.querySelectorAll('.conversation-item').forEach(item => {
+                item.classList.remove('active');
+            });
+        }
+        
+        // 대화 로드
+        async function loadConversation(conversationId) {
+            currentConversationId = conversationId;
+            
+            // 활성 상태 표시
+            document.querySelectorAll('.conversation-item').forEach(item => {
+                item.classList.remove('active');
+                if (item.getAttribute('data-conversation-id') === conversationId) {
+                    item.classList.add('active');
+                }
+            });
+            
+            try {
+                const response = await fetch(`/api/history/${conversationId}`);
+                if (response.ok) {
+                    const data = await response.json();
+                    displayMessages(data.messages || []);
+                } else {
+                    alert('대화를 불러오는데 실패했습니다.');
+                }
+            } catch (error) {
+                console.error('Error loading conversation:', error);
+                alert('대화를 불러오는데 실패했습니다.');
+            }
+        }
+        
+        // 메시지 표시
+        function displayMessages(messages) {
+            if (!messages || messages.length === 0) {
+                chatMessages.innerHTML = '<div class="text-center text-muted" style="padding: 40px;">메시지가 없습니다</div>';
+                return;
+            }
+            
+            chatMessages.innerHTML = '';
+            messages.forEach(msg => {
+                // 메시지 형식에 따라 role, content, timestamp 추출
+                const role = msg.role || msg.sender || 'assistant';
+                const content = msg.content || msg.message || msg.text || '';
+                const timestamp = msg.timestamp || msg.created_at || msg.time;
+                
+                // role이 'user'인지 확인 (대소문자 구분 없이)
+                const isUser = role.toLowerCase() === 'user' || role.toLowerCase() === '사용자';
+                addMessageToChat(isUser ? 'user' : 'assistant', content, timestamp);
+            });
+            scrollToBottom();
+        }
+        
+        // 메시지 전송
+        async function sendMessage() {
+            const message = messageInput.value.trim();
+            if (!message) return;
+            
+            // 입력창 비활성화
+            messageInput.disabled = true;
+            const sendButton = document.querySelector('.btn-send');
+            if (sendButton) sendButton.disabled = true;
+            
+            // 상태 메시지 표시
+            showStatusMessage('메시지를 전송하고 있습니다...');
+            
+            // 사용자 메시지 표시
+            addMessageToChat('user', message);
+            messageInput.value = '';
+            
+            // 응답 대기 중 메시지 표시
+            const waitingMessage = addMessageToChat('assistant', '응답을 생성하고 있습니다...');
+            waitingMessage.querySelector('.message-content').style.fontStyle = 'italic';
+            waitingMessage.querySelector('.message-content').style.color = '#6c757d';
+            
+            try {
+                showStatusMessage('서버로부터 응답을 받고 있습니다...');
+                const response = await fetch('/chat', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        message: message,
+                        conversation_id: currentConversationId
+                    })
+                });
+                
+                if (!response.ok) {
+                    throw new Error(`서버 오류: ${response.status}`);
+                }
+                
+                // 대기 메시지 제거하고 실제 응답 메시지 시작
+                waitingMessage.remove();
+                const messageElement = addMessageToChat('assistant', '');
+                
+                // 메시지 내용 업데이트 함수
+                function updateMessageContent(content) {
+                    if (!messageElement || !messageElement.querySelector) return;
+                    
+                    const contentElement = messageElement.querySelector('.message-content');
+                    if (!contentElement) return;
+                    
+                    if (typeof marked !== 'undefined') {
+                        try {
+                            contentElement.innerHTML = marked.parse(content);
+                        } catch (e) {
+                            contentElement.textContent = content;
+                        }
+                    } else {
+                        contentElement.textContent = content;
+                    }
+                    scrollToBottom();
+                }
+                
+                // SSE 스트림 읽기
+                const reader = response.body.getReader();
+                // 브라우저 호환성을 위해 명시적으로 UTF-8 인코딩 지정
+                const decoder = new TextDecoder('utf-8', { fatal: false, ignoreBOM: true });
+                let assistantMessage = '';
+                let eventType = '';
+                let hasReceivedData = false;
+                let buffer = ''; // 불완전한 라인을 저장할 버퍼
+                let wasNewConversation = false; // 새 대화 생성 여부 추적
+                
+                try {
+                    while (true) {
+                        const { done, value } = await reader.read();
+                        if (done) {
+                            // 마지막 버퍼 처리
+                            if (buffer.trim()) {
+                                const lines = buffer.split('\n');
+                                for (const line of lines) {
+                                    if (line.trim()) {
+                                        processSSELine(line.trim());
+                                    }
+                                }
+                            }
+                            break;
+                        }
+                        
+                        // 버퍼에 새 데이터 추가 (브라우저 호환성을 위한 에러 핸들링)
+                        try {
+                            const decodedChunk = decoder.decode(value, { stream: true });
+                            buffer += decodedChunk;
+                        } catch (decodeError) {
+                            console.warn('TextDecoder decode error:', decodeError);
+                            // 디코딩 실패 시에도 계속 진행 (일부 브라우저 호환성)
+                            try {
+                                // 대체 방법: String.fromCharCode 사용
+                                const fallbackDecode = Array.from(value)
+                                    .map(byte => String.fromCharCode(byte))
+                                    .join('');
+                                buffer += fallbackDecode;
+                            } catch (fallbackError) {
+                                console.error('Fallback decode also failed:', fallbackError);
+                                // 최후의 수단: 버퍼에 추가하지 않고 계속 진행
+                            }
+                        }
+                        
+                        const lines = buffer.split('\n');
+                        
+                        // 마지막 라인은 불완전할 수 있으므로 버퍼에 보관
+                        buffer = lines.pop() || '';
+                        
+                        // 완전한 라인들 처리
+                        for (const line of lines) {
+                            if (line.trim()) {
+                                processSSELine(line.trim());
+                            }
+                        }
+                    }
+                } catch (streamError) {
+                    console.error('SSE stream reading error:', streamError);
+                    // 스트림 읽기 오류 발생 시에도 사용자에게 알림
+                    const contentElement = messageElement.querySelector('.message-content');
+                    if (contentElement && !hasReceivedData) {
+                        contentElement.textContent = '응답을 받는 중 오류가 발생했습니다.';
+                        contentElement.style.color = '#dc3545';
+                    }
+                } finally {
+                    // 리소스 정리
+                    try {
+                        reader.releaseLock();
+                    } catch (e) {
+                        // 이미 해제된 경우 무시
+                    }
+                }
+                
+                // SSE 라인 처리 함수
+                function processSSELine(line) {
+                    if (!line) return;
+                    
+                    if (line.startsWith('event: ')) {
+                        eventType = line.substring(7).trim();
+                        console.log('SSE Event:', eventType);
+                        return;
+                    }
+                    
+                    if (line.startsWith('data: ')) {
+                        const data = line.substring(6).trim();
+                        if (!data) return;
+                        
+                        try {
+                            const jsonData = JSON.parse(data);
+                            console.log('SSE Data:', eventType, jsonData);
+                            
+                            if (eventType === 'start') {
+                                hasReceivedData = true;
+                                if (jsonData.conversation_id) {
+                                    // conversation_id 업데이트
+                                    const newConversationId = jsonData.conversation_id;
+                                    wasNewConversation = !currentConversationId;
+                                    currentConversationId = newConversationId;
+                                    console.log('Conversation ID:', currentConversationId);
+                                    
+                                    // 새 대화인 경우 목록을 즉시 갱신 (비동기로 처리하여 SSE 스트리밍에 영향 없음)
+                                    if (wasNewConversation) {
+                                        console.log('New conversation detected, updating list');
+                                        refreshConversationList().catch(err => {
+                                            console.error('Error refreshing conversation list:', err);
+                                        });
+                                    }
+                                }
+                            } else if (eventType === 'token') {
+                                hasReceivedData = true;
+                                hideStatusMessage();
+                                const text = jsonData.text || jsonData.content || '';
+                                if (text) {
+                                    assistantMessage += text;
+                                    updateMessageContent(assistantMessage);
+                                    console.log('Token received, message length:', assistantMessage.length);
+                                }
+                            } else if (eventType === 'metadata') {
+                                // metadata 이벤트 처리 (답변 생성에 활용된 참조 문서 정보)
+                                console.log('SSE Metadata received:', jsonData);
+                                if (jsonData.sources && Array.isArray(jsonData.sources) && jsonData.sources.length > 0) {
+                                    displaySources(messageElement, jsonData.sources);
+                                }
+                            } else if (eventType === 'done') {
+                                hideStatusMessage();
+                                console.log('SSE Done, total message length:', assistantMessage.length);
+                                if (!hasReceivedData) {
+                                    const contentElement = messageElement.querySelector('.message-content');
+                                    if (contentElement) {
+                                        contentElement.textContent = '응답을 생성하지 못했습니다.';
+                                        contentElement.style.color = '#dc3545';
+                                    }
+                                }
+                                
+                                // 스트리밍 완료 후 새 대화인 경우 목록 갱신 (이미 갱신했어도 안전하게 다시 확인)
+                                if (wasNewConversation && currentConversationId) {
+                                    refreshConversationList().catch(err => {
+                                        console.error('Error refreshing conversation list after done:', err);
+                                    });
+                                }
+                            } else if (eventType === 'error' || jsonData.error) {
+                                throw new Error(jsonData.error || '알 수 없는 오류');
+                            } else {
+                                // eventType이 없거나 알 수 없는 경우, 데이터를 텍스트로 처리
+                                const text = jsonData.text || jsonData.content || jsonData.message || '';
+                                if (text) {
+                                    hasReceivedData = true;
+                                    hideStatusMessage();
+                                    assistantMessage += text;
+                                    updateMessageContent(assistantMessage);
+                                    console.log('Unknown event type, treating as text:', eventType);
+                                }
+                            }
+                        } catch (e) {
+                            // JSON 파싱 실패 시 텍스트로 처리
+                            if (data && !data.startsWith('{') && !data.startsWith('event:')) {
+                                hasReceivedData = true;
+                                hideStatusMessage();
+                                assistantMessage += data;
+                                updateMessageContent(assistantMessage);
+                                console.log('Non-JSON data received:', data.substring(0, 50));
+                            } else if (e.message && e.message !== 'Unexpected end of JSON input') {
+                                console.error('SSE 파싱 오류:', e, 'Line:', line);
+                            }
+                        }
+                    } else if (line && !line.startsWith('event:') && !line.startsWith('data:')) {
+                        // 직접 텍스트인 경우 (SSE 형식이 아닐 수 있음)
+                        hasReceivedData = true;
+                        hideStatusMessage();
+                        assistantMessage += line;
+                        updateMessageContent(assistantMessage);
+                        console.log('Direct text received:', line.substring(0, 50));
+                    }
+                }
+                
+                // 완료 후 처리
+                hideStatusMessage();
+                if (!hasReceivedData) {
+                    const contentElement = messageElement.querySelector('.message-content');
+                    if (contentElement) {
+                        contentElement.textContent = '응답을 받지 못했습니다. 다시 시도해주세요.';
+                        contentElement.style.color = '#dc3545';
+                    }
+                }
+                
+                // 스트리밍 완료 후 새 대화인 경우 목록 갱신 (done 이벤트에서 처리하지 못한 경우를 대비)
+                if (wasNewConversation && currentConversationId) {
+                    refreshConversationList().catch(err => {
+                        console.error('Error refreshing conversation list after stream completion:', err);
+                    });
+                }
+                
+            } catch (error) {
+                hideStatusMessage();
+                // 대기 메시지가 있으면 제거
+                if (waitingMessage && waitingMessage.parentNode) {
+                    waitingMessage.remove();
+                }
+                
+                // 에러 메시지 표시
+                const errorMessage = addMessageToChat('assistant', `오류: ${error.message}`);
+                errorMessage.querySelector('.message-content').style.color = '#dc3545';
+                errorMessage.querySelector('.message-content').style.fontWeight = '500';
+                
+                console.error('Error sending message:', error);
+            } finally {
+                // 입력창 다시 활성화
+                messageInput.disabled = false;
+                if (sendButton) sendButton.disabled = false;
+                messageInput.focus();
+                hideStatusMessage();
+            }
+        }
+        
+        // Sources 표시 함수 (metadata 이벤트에서 호출)
+        function displaySources(messageElement, sources) {
+            if (!messageElement || !sources || !Array.isArray(sources) || sources.length === 0) {
+                return;
+            }
+            
+            // 기존 sources 영역이 있으면 제거
+            const existingSources = messageElement.querySelector('.message-sources');
+            if (existingSources) {
+                existingSources.remove();
+            }
+            
+            // 중복 제거: title과 document_id를 기준으로 유니크한 항목만 추출
+            const uniqueSources = [];
+            const seen = new Set();
+            
+            sources.forEach((source) => {
+                // title을 기준으로 중복 체크 (document_id가 있으면 함께 사용)
+                const key = source.document_id 
+                    ? `${source.title || ''}_${source.document_id}` 
+                    : source.title || '';
+                
+                if (key && !seen.has(key)) {
+                    seen.add(key);
+                    uniqueSources.push(source);
+                }
+            });
+            
+            if (uniqueSources.length === 0) {
+                return;
+            }
+            
+            // sources 영역 생성
+            const sourcesDiv = document.createElement('div');
+            sourcesDiv.className = 'message-sources';
+            
+            // 헤더 (클릭 가능한 토글)
+            const headerDiv = document.createElement('div');
+            headerDiv.className = 'message-sources-header';
+            
+            const titleDiv = document.createElement('div');
+            titleDiv.className = 'message-sources-title';
+            titleDiv.innerHTML = '<span>참조 문서</span>';
+            
+            const countSpan = document.createElement('span');
+            countSpan.className = 'message-sources-count';
+            countSpan.textContent = `(${uniqueSources.length}개)`;
+            titleDiv.appendChild(countSpan);
+            
+            const toggleSpan = document.createElement('span');
+            toggleSpan.className = 'message-sources-toggle';
+            
+            headerDiv.appendChild(titleDiv);
+            headerDiv.appendChild(toggleSpan);
+            
+            // sources 리스트
+            const sourcesList = document.createElement('div');
+            sourcesList.className = 'sources-list';
+            
+            // 각 source 항목 생성 (title 중심으로 표시)
+            uniqueSources.forEach((source) => {
+                const sourceItem = document.createElement('div');
+                sourceItem.className = 'source-item';
+                
+                const sourceInfo = document.createElement('div');
+                sourceInfo.className = 'source-item-info';
+                
+                // title만 주요 표시 (명세서상 title이 가장 중요한 정보)
+                const sourceTitle = document.createElement('div');
+                sourceTitle.className = 'source-title';
+                sourceTitle.textContent = source.title || '제목 없음';
+                
+                // 메타 정보는 선택적으로 표시 (page, relevance가 있을 때만)
+                const sourceMeta = document.createElement('div');
+                sourceMeta.className = 'source-meta';
+                
+                let hasMeta = false;
+                
+                // 페이지 정보
+                if (source.page !== undefined && source.page !== null) {
+                    const pageItem = document.createElement('span');
+                    pageItem.className = 'source-meta-item';
+                    pageItem.innerHTML = `<span>📄</span> <span>페이지 ${source.page}</span>`;
+                    sourceMeta.appendChild(pageItem);
+                    hasMeta = true;
+                }
+                
+                // 관련도 점수
+                if (source.relevance !== undefined && source.relevance !== null) {
+                    const relevanceItem = document.createElement('span');
+                    relevanceItem.className = 'source-meta-item';
+                    const relevancePercent = Math.round(source.relevance * 100);
+                    relevanceItem.innerHTML = `<span class="source-relevance">${relevancePercent}%</span>`;
+                    sourceMeta.appendChild(relevanceItem);
+                    hasMeta = true;
+                }
+                
+                sourceInfo.appendChild(sourceTitle);
+                if (hasMeta) {
+                    sourceInfo.appendChild(sourceMeta);
+                }
+                sourceItem.appendChild(sourceInfo);
+                sourcesList.appendChild(sourceItem);
+            });
+            
+            // 토글 기능
+            let isCollapsed = false;
+            headerDiv.addEventListener('click', function() {
+                isCollapsed = !isCollapsed;
+                if (isCollapsed) {
+                    sourcesList.classList.add('collapsed');
+                    toggleSpan.classList.add('collapsed');
+                } else {
+                    sourcesList.classList.remove('collapsed');
+                    toggleSpan.classList.remove('collapsed');
+                }
+            });
+            
+            // 기본적으로 접혀있도록 설정 (너무 많은 경우 채팅이 보이지 않는 문제 해결)
+            if (uniqueSources.length > 3) {
+                isCollapsed = true;
+                sourcesList.classList.add('collapsed');
+                toggleSpan.classList.add('collapsed');
+            }
+            
+            sourcesDiv.appendChild(headerDiv);
+            sourcesDiv.appendChild(sourcesList);
+            messageElement.appendChild(sourcesDiv);
+            
+            // 스크롤을 맨 아래로
+            scrollToBottom();
+        }
+        
+        // 메시지를 채팅 영역에 추가
+        function addMessageToChat(role, content, timestamp = null) {
+            if (chatMessages.querySelector('.text-center')) {
+                chatMessages.innerHTML = '';
+            }
+            
+            const messageDiv = document.createElement('div');
+            messageDiv.className = `message ${role}`;
+            
+            const now = timestamp || new Date().toISOString();
+            const timeStr = new Date(now).toLocaleTimeString('ko-KR', { hour: '2-digit', minute: '2-digit' });
+            
+            // 마크다운 렌더링 (assistant 메시지만)
+            let renderedContent;
+            if (role === 'assistant' && typeof marked !== 'undefined') {
+                try {
+                    renderedContent = marked.parse(content);
+                } catch (e) {
+                    renderedContent = escapeHtml(content);
+                }
+            } else {
+                renderedContent = escapeHtml(content);
+            }
+            
+            messageDiv.innerHTML = `
+                <div class="message-content">${renderedContent}</div>
+                <div class="message-time">${timeStr}</div>
+            `;
+            
+            chatMessages.appendChild(messageDiv);
+            scrollToBottom();
+            
+            return messageDiv;
+        }
+        
+        // 상태 메시지 표시
+        function showStatusMessage(message) {
+            const statusMsg = document.getElementById('status-message');
+            if (statusMsg) {
+                statusMsg.textContent = message;
+                statusMsg.style.display = 'block';
+            }
+        }
+        
+        function hideStatusMessage() {
+            const statusMsg = document.getElementById('status-message');
+            if (statusMsg) {
+                statusMsg.style.display = 'none';
+            }
+        }
+        
+        // 엔터 키 처리
+        function handleKeyPress(event) {
+            if (event.key === 'Enter' && !event.shiftKey) {
+                event.preventDefault();
+                sendMessage();
+            }
+        }
+        
+        // 스크롤을 맨 아래로
+        function scrollToBottom() {
+            chatMessages.scrollTop = chatMessages.scrollHeight;
+        }
+        
+        // HTML 이스케이프
+        function escapeHtml(text) {
+            const div = document.createElement('div');
+            div.textContent = text;
+            return div.innerHTML;
+        }
+        
+        // 대화 제목 수정
+        async function editTitle(conversationId, event) {
+            event.stopPropagation();
+            const newTitle = prompt('새 제목을 입력하세요:');
+            if (!newTitle) return;
+            
+            try {
+                const response = await fetch(`/api/history/${conversationId}/title`, {
+                    method: 'PUT',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({ title: newTitle })
+                });
+                
+                if (response.ok) {
+                    location.reload();
+                } else {
+                    alert('제목 수정에 실패했습니다.');
+                }
+            } catch (error) {
+                console.error('Error updating title:', error);
+                alert('제목 수정에 실패했습니다.');
+            }
+        }
+        
+        // 대화 목록 새로고침
+        async function refreshConversationList() {
+            try {
+                const response = await fetch('/api/conversations');
+                if (!response.ok) {
+                    console.error('Failed to fetch conversations');
+                    return;
+                }
+                
+                const data = await response.json();
+                const conversations = data.conversations || [];
+                
+                // 대화 목록 컨테이너
+                const conversationList = document.getElementById('conversation-list');
+                if (!conversationList) return;
+                
+                // 기존 목록 초기화
+                conversationList.innerHTML = '';
+                
+                if (conversations.length === 0) {
+                    conversationList.innerHTML = '<div class="text-muted text-center" style="padding: 20px;">대화가 없습니다</div>';
+                    return;
+                }
+                
+                // 대화 항목 생성
+                conversations.forEach(conv => {
+                    const item = createConversationItem(conv);
+                    conversationList.appendChild(item);
+                });
+                
+                // 현재 활성 대화 표시
+                if (currentConversationId) {
+                    const activeItem = document.querySelector(`[data-conversation-id="${currentConversationId}"]`);
+                    if (activeItem) {
+                        activeItem.classList.add('active');
+                    }
+                }
+            } catch (error) {
+                console.error('Error refreshing conversation list:', error);
+            }
+        }
+        
+        // 대화 항목 생성 함수
+        function createConversationItem(conv) {
+            const item = document.createElement('div');
+            item.className = 'conversation-item';
+            item.setAttribute('data-conversation-id', conv.conversation_id);
+            
+            const title = conv.title || '새 대화';
+            const date = conv.created_at ? conv.created_at.substring(0, 10) : '';
+            
+            item.innerHTML = `
+                <div class="conversation-title">${escapeHtml(title)}</div>
+                <div class="conversation-date">${date}</div>
+                <div class="conversation-actions">
+                    <button class="btn btn-sm btn-outline-secondary" onclick="editTitle('${conv.conversation_id}', event)">제목 수정</button>
+                    <button class="btn btn-sm btn-outline-danger" onclick="deleteConversation('${conv.conversation_id}', event)">삭제</button>
+                </div>
+            `;
+            
+            // 클릭 이벤트 추가
+            item.addEventListener('click', function(e) {
+                if (!e.target.closest('button')) {
+                    loadConversation(conv.conversation_id);
+                }
+            });
+            
+            return item;
+        }
+        
+        // 대화 삭제
+        async function deleteConversation(conversationId, event) {
+            event.stopPropagation();
+            if (!confirm('정말 이 대화를 삭제하시겠습니까?')) return;
+            
+            try {
+                const response = await fetch(`/api/history/${conversationId}`, {
+                    method: 'DELETE',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({})
+                });
+                
+                if (response.ok) {
+                    // 삭제된 항목 제거
+                    const item = document.querySelector(`[data-conversation-id="${conversationId}"]`);
+                    if (item) {
+                        item.remove();
+                    }
+                    
+                    // 현재 대화가 삭제된 경우 새 대화 시작
+                    if (currentConversationId === conversationId) {
+                        startNewConversation();
+                    }
+                    
+                    // 목록이 비어있으면 메시지 표시
+                    const conversationList = document.getElementById('conversation-list');
+                    if (conversationList && conversationList.children.length === 0) {
+                        conversationList.innerHTML = '<div class="text-muted text-center" style="padding: 20px;">대화가 없습니다</div>';
+                    }
+                } else {
+                    alert('대화 삭제에 실패했습니다.');
+                }
+            } catch (error) {
+                console.error('Error deleting conversation:', error);
+                alert('대화 삭제에 실패했습니다.');
+            }
+        }
+    </script>
+</body>
+</html>
+
