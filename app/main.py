@@ -49,21 +49,25 @@ async def login_page(request: Request):
     group_codes = []
     kb_domains = []
     error_message = None
+    fetch_errors = []
     
     try:
-        # Group Code 목록 조회 (로그인 페이지는 헤더 없이 시도, 실패 시 빈 리스트 반환)
+        # Group Code 목록 조회
         try:
             group_codes = await api_client.get_group_codes()
-        except:
+        except Exception as e:
             group_codes = []
+            fetch_errors.append(f"Group Code 조회 실패: {str(e)}")
+
         # KB Domain 목록 조회
         try:
             kb_domains = await api_client.get_kb_domains()
-        except:
+        except Exception as e:
             kb_domains = []
-    except Exception as e:
-        # API 호출 실패 시 에러 메시지 저장
-        error_message = f"백엔드 API 호출 실패: {str(e)}"
+            fetch_errors.append(f"KB Domain 조회 실패: {str(e)}")
+
+        if fetch_errors:
+            error_message = " / ".join(fetch_errors)
     finally:
         await api_client.close()
     
